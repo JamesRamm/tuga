@@ -21,51 +21,67 @@ Below are the command line arguments we plan to support.
 ### `tuga create <name>`
   Create a new Model
   
-  Arguments:
+Arguments:
 * `name`: The name to give to the model.
   
-  Options:
+Options:
 * `--data <data.zip>` Initialize the model with input data extracted from the given zip archive
 * `--description <description>` The model description
 * `--email <email>` Email contact for the model owner
 
+<hr>
+
 ### `tuga update <name>`
   Update a model
 
-  Options:
+Arguments:
+* `name`: The name of the model.
+
+Options:
 
 * `--data <file.ext>` New data/scripts to add to the model
 * `--description <description>` New description for the model
 * `--name <name>` New name for the model
 * `--email <email>` New email contact for the model
-     
+
+<hr>
+  
 ### `tuga anuga <name>`
   Run Anuga for a script in a previously created model.
+  
+Arguments:
+* `name`: The name of the model.
 
-  Options:
+Options:
 
 * `--script <name>` Script name (previously uploaded)
 * `--notify` Email updates 
 * `--watch` Stream output directly to the command line
 
+<hr>
+
 ### `tuga tuflow <name>`
   Run Tuflow for a script in a previously created model. 
 
-  Options:
+Options:
 
 * `--script <name>` Control file name 
 * `--notify` Email updates 
 * `--watch` Stream output directly to the command line
 
+<hr>
+
 ### `tuga results`
   View all results. Will return a description of all Model Runs.
   
-  Options:
+Options:
 * `--model <name>` Limit to results for a specific model
 * `--script <name>` Show a single result for a specific control file (only possible if `--model` also specified)
 * `--download` Download all available result files. 
 * `--tree` Also output a representation of the result folder tree. This description will show file identifiers for each file which can be used to download specific files. 
-    
+
+<hr>
+
 ### `tuga file <fid>`
    Download a specific file, given by its file identifier - `fid`.
   
