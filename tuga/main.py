@@ -2,7 +2,7 @@ import click
 from .lib import TuclusterClient
 
 @click.group()
-@click.option('--host', default='localhost:8000')
+@click.option('--host', default='localhost:8000', help="Host name of the tucluster API")
 @click.option('--debug/--no-debug', default=False)
 @click.pass_context
 def cli(ctx, api_host, debug):
@@ -10,7 +10,7 @@ def cli(ctx, api_host, debug):
 
 
 @cli.command()
-@click.argument('name', type=str, help="Name of the model to create")
+@click.argument('name', type=str)
 @click.option('--data', type=click.Path(exists=True), help="Path to zip archive containing input data")
 @click.option('--description', '-d', type=str, help="Description of model")
 @click.option('--email', '-e', type=str, help="Email address of model owner/contact for notifications")
@@ -18,7 +18,16 @@ def cli(ctx, api_host, debug):
 def create(client, name, data=None, description=None, email=None):
     '''Create a new model
     '''
-    result = client.create(name, data, description, email)
+    if data:
+        post_result = client.post_model_zip(data)
+
+    model = post_result.json()
+    patch_result = client.update_model(
+        model['name'],
+        new_name=name,
+        description=description,
+        email=email
+    )
 
 
 @cli.command()
@@ -31,7 +40,7 @@ def create(client, name, data=None, description=None, email=None):
 def update(client, name, files=None, description=None, new_name=None, email=None):
     '''Update an existing model
     '''
-    result = client.update(name, files, description, new_name, email)
+    result = client.update_model(name, files, description, new_name, email)
 
 
 @cli.command()
