@@ -21,13 +21,13 @@ def create(client, name, data=None, description=None, email=None):
     if data:
         post_result = client.post_model_zip(data)
 
-    model = post_result.json()
-    patch_result = client.update_model(
-        model['name'],
-        new_name=name,
-        description=description,
-        email=email
-    )
+        model = post_result.json()
+        patch_result = client.update_model(
+            model['name'],
+            new_name=name,
+            description=description,
+            email=email
+        )
 
 
 @cli.command()
