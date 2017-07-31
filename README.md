@@ -2,7 +2,7 @@
 
 TuGa - TUflow and anuGA.
 
-TuGa is a command line client for Tucluster - cloud based distributed flood modelling using ANUGA hydro and/or Tuflow. 
+TuGa is a command line client for [Tucluster](https://github.com/JamesRamm/tucluster) - cloud based distributed flood modelling using ANUGA hydro and/or Tuflow. 
 
 ## Data Model
 Understanding the data model that is used by Tucluster on the remote server is useful for understanding how Tuga works and 
