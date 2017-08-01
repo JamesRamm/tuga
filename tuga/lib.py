@@ -6,13 +6,10 @@ import requests
 def read_in_chunks(file_object, chunksize=4096, callback=None):
     """Lazy function (generator) to read a file piece by piece.
     Default chunk size: 1k."""
-    size = file_object.seek(0, 2)
-    file_object.seek(0)
     while True:
         data = file_object.read(chunksize)
-        percent_complete = file_object.tell() / size * 100
         if callback:
-            callback(percent_complete)
+            callback(file_object.tell())
         if not data:
             break
         yield data
@@ -43,6 +40,8 @@ class TuclusterClient:
                 data=read_in_chunks(stream, callback=progress_fn)
             )
 
+        # Raise an error if it occurred
+        post_result.raise_for_status()
         return post_result
 
     def create_empty_model(self, name, description, email):
@@ -57,11 +56,14 @@ class TuclusterClient:
             data['name'] = name
 
         headers = {'content-type': 'application/json'}
-        return requests.post(
+        result = requests.post(
             "{}/models".format(self._host),
             headers=headers,
             data=data
         )
+
+        result.raise_for_status()
+        return result
 
 
     def update_model(self, name, description=None, new_name=None, email=None):
@@ -78,15 +80,31 @@ class TuclusterClient:
             data['name'] = new_name
 
         headers = {'content-type': 'application/json'}
-        return requests.patch(
+        result = requests.patch(
             "{}/models/{}".format(self._host, name),
             headers=headers,
-            data=data
+            data=json.dumps(data)
         )
 
-    def update_model_files(self, name, files=None):
-        pass
+        result.raise_for_status()
+        return result
 
+    def add_model_file(self, name, path, progress_fn=None):
+        '''Upload a file to an existing model
+        '''
+        headers = {
+            'content-disposition': 'attachment; filename="{}"'.format(os.path.basename(path)),
+            'content-type': 'application/octet-stream'
+        }
+        with open(path, 'rb') as stream:
+            result = requests.patch(
+                "{}/models/{}".format(self._host, name),
+                headers=headers,
+                data=read_in_chunks(stream, callback=progress_fn)
+            )
+
+        result.raise_for_status()
+        return result
 
     def anuga(self, name, script=None, notify=False, watch=False):
         pass
@@ -96,8 +114,17 @@ class TuclusterClient:
         pass
 
 
-    def model(self, name, tree=False):
-        pass
+    def get_model(self, name, tree=False):
+        response = requests.get('{}/models/{}'.format(self._host, name))
+        response.raise_for_status()
+        model = response.json()
+        if tree:
+            response = requests.get('{}/files/tree/{}'.format(self._host, model['folder']))
+            response.raise_for_status()
+            file_tree = response.json()
+            model['folder'] = file_tree
+
+        return model
 
 
     def results(self, model=None, script=None, download=False, tree=False):

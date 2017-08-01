@@ -1,12 +1,14 @@
 import click
+import os
+import json
 from .lib import TuclusterClient
 
 @click.group()
-@click.option('--host', default='localhost:8000', help="Host name of the tucluster API")
+@click.option('--host', default='http://localhost:8000', help="Host name of the tucluster API")
 @click.option('--debug/--no-debug', default=False)
 @click.pass_context
-def cli(ctx, api_host, debug):
-    ctx.obj = TuclusterClient(api_host)
+def cli(ctx, host, debug):
+    ctx.obj = TuclusterClient(host)
 
 
 @cli.command()
@@ -18,16 +20,35 @@ def cli(ctx, api_host, debug):
 def create(client, name, data=None, description=None, email=None):
     '''Create a new model
     '''
-    if data:
-        post_result = client.post_model_zip(data)
+    try:
+        if data:
+            # Post the data file then patch the resulting model with
+            # the meta data.
 
-        model = post_result.json()
-        patch_result = client.update_model(
-            model['name'],
-            new_name=name,
-            description=description,
-            email=email
-        )
+            # Get the size of the input file to display progress
+            with open(data, 'rb') as fobj:
+                size = fobj.seek(0, 2)
+            with click.progressbar(length=size, label='Uploading data') as progress:
+                post_result = client.post_model_zip(data, progress_fn=progress.update)
+
+            click.secho('Upload successful', fg='green')
+            click.secho('Updating metadata...', fg='blue')
+
+            model_dict = post_result.json()
+            client.update_model(
+                model_dict['name'],
+                new_name=name,
+                description=description,
+                email=email
+            )
+
+        else:
+            ## Create a new model without any data
+            result = client.create_empty_model(name, description, email)
+
+        click.secho('Model {} created!'.format(name), fg='green')
+    except Exception as error:
+        click.secho(str(error), fg='white', bg='red', bold=True)
 
 
 @cli.command()
@@ -40,7 +61,24 @@ def create(client, name, data=None, description=None, email=None):
 def update(client, name, files=None, description=None, new_name=None, email=None):
     '''Update an existing model
     '''
-    result = client.update_model(name, files, description, new_name, email)
+    if description or new_name or email:
+        click.secho('Updating metadata...', fg='blue')
+        client.update_model(name, description, new_name, email)
+
+    if files:
+        for path in files:
+            msg = 'Uploading {}...'.format(os.path.basename(path))
+            with open(path, 'rb') as fobj:
+                size = fobj.seek(0, 2)
+            with click.progressbar(length=size, label=msg) as progress:
+                result = client.add_model_file(path, progress_fn=progress.update)
+
+    click.secho('Model {} updated!'.format(name), fg='green')
+    if new_name:
+        click.secho(
+            'The model has been renamed to {}. Use this name for future queries'.format(new_name),
+            fg='blue'
+        )
 
 
 @cli.command()
@@ -69,13 +107,18 @@ def tuflow(client, name, script=None, notify=False, watch=False):
 
 @cli.command()
 @click.argument('name', type=str)
-@click.option('--tree', 't', type=str)
+@click.option('--tree', '-t', type=bool)
 @click.pass_obj
 def model(client, name, tree=False):
     '''View a model and its' data tree
     '''
-    result = client.model(name, tree)
-
+    try:
+        result = client.get_model(name, tree)
+        click.secho('Model Info:')
+        click.secho(json.dumps(result, sort_keys=True,
+                               indent=4, separators=(',', ': ')))
+    except Exception as error:
+        click.secho(str(error), fg='white', bg='red', bold=True)
 
 @cli.command()
 @click.option('--model', '-m', type=str)
