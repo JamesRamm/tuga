@@ -21,6 +21,14 @@ class TuclusterClient:
     def __init__(self, host):
         self._host = host
 
+    @property
+    def host(self):
+        return self._host
+
+    @host.setter
+    def host(self, value):
+        self._host = value
+
     def post_model_zip(self, data, progress_fn=None):
         '''Post a zip file to create a new model
         '''
@@ -106,12 +114,32 @@ class TuclusterClient:
         result.raise_for_status()
         return result
 
-    def anuga(self, name, script=None, notify=False, watch=False):
-        pass
+    def create_run(self, name, script=None, notify=False, watch=False, engine='anuga'):
+        '''Create a ModelRun using ``engine`` as the modelling engine
+        '''
+        data = {
+            'engine': engine,
+            'modelName': name,
+            'entrypoint': script
+        }
 
+        if not script:
+            # Get the model to loop through the entry points
+            model = self.get_model(name)
+            entrypoints = model['entry_points']
+        else:
+            entrypoints = [script]
 
-    def tuflow(self, name, script=None, notify=False, watch=False):
-        pass
+        results = []
+        for entrypoint in entrypoints:
+            data['entrypoint'] = entrypoint
+            result = requests.post(
+                '{}/runs'.format(self._host),
+                data=json.dumps(data)
+            )
+            results.append(result)
+
+        return results
 
 
     def get_model(self, name, tree=False):

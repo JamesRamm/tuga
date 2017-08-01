@@ -10,6 +10,14 @@ from .lib import TuclusterClient
 def cli(ctx, host, debug):
     ctx.obj = TuclusterClient(host)
 
+@click.command()
+@click.argument('host', type=str)
+@click.pass_obj
+def set_host(client, host):
+    '''Change/set the host name from the default (http://localhost:8000)
+    '''
+    client.host = host
+    click.secho('Host URL set to {}'.format(host), fg='green')
 
 @cli.command()
 @click.argument('name', type=str)
@@ -81,6 +89,16 @@ def update(client, name, files=None, description=None, new_name=None, email=None
         )
 
 
+def _print_run_results(results):
+    for r in results:
+        if r.status_code == 201:
+            data = r.json()
+            msg = 'Run for {} created. Task ID for results is: {}'.format(data['entry_point'], data['task_id'])
+            click.secho(msg, fg='green')
+        else:
+            click.secho('Run creation failed', fg='white', bg='red', bold=True)
+
+
 @cli.command()
 @click.argument('name', type=str)
 @click.option('--script', '-s', type=str)
@@ -90,7 +108,8 @@ def update(client, name, files=None, description=None, new_name=None, email=None
 def anuga(client, name, script=None, notify=False, watch=False):
     '''Queue a modelling task to run with Anuga
     '''
-    result = client.anuga(name, script, notify, watch)
+    results = client.create_run(name, script, notify, watch, 'anuga')
+    _print_run_results(results)
 
 
 @cli.command()
@@ -102,7 +121,8 @@ def anuga(client, name, script=None, notify=False, watch=False):
 def tuflow(client, name, script=None, notify=False, watch=False):
     '''Queue a modelling task to run with Tuflow
     '''
-    result = client.tuflow(name, script, notify, watch)
+    results = client.create_run(name, script, notify, watch, 'tuflow')
+    _print_run_results(results)
 
 
 @cli.command()
