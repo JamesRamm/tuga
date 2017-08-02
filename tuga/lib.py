@@ -160,7 +160,13 @@ class TuclusterClient:
         return response.json()
 
 
-    def get_results(self, model=None, script=None):
+    def get_results(self, task=None, model=None, script=None):
+        if task:
+            response = requests.get('{}/tasks/{}'.format(self._host, task))
+            response.raise_for_status()
+            task = response.json()
+            return task
+
         params = {}
         if model:
             params['model'] = model

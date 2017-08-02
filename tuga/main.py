@@ -102,10 +102,10 @@ def _print_run_results(results):
     for r in results:
         if r.status_code == 201:
             data = r.json()
-            msg = 'Run for {} created. Task ID for results is: {}'.format(
-                data['entry_point'], data['task_id']
-            )
+            msg = 'Run for script {} created.'.format(data['entry_point'])
             click.secho(msg, fg='green')
+            click.secho('To check the results, run: ')
+            click.secho('tuga results --task {}'.format(data['task_id']), fg='blue')
         else:
             click.secho('Run creation failed', fg='white', bg='red', bold=True)
 
@@ -161,13 +161,14 @@ def model(client, name=None, tree=False):
 @cli.command()
 @click.option('--model', '-m', type=str)
 @click.option('--script', '-s', type=str)
+@click.option('--task', type=str)
 @click.option('--download', '-d', type=str)
 @click.option('--tree', '-t', type=str)
 @click.pass_obj
-def results(client, model=None, script=None, download=False, tree=False):
+def results(client, task=None, model=None, script=None, download=False, tree=False):
     '''View the results for a model, if available
     '''
-    result = client.get_results(model, script)
+    result = client.get_results(task, model, script)
     click.secho('Result Info:')
     click.secho(json.dumps(result, sort_keys=True,
                            indent=4, separators=(',', ': ')))
