@@ -154,11 +154,34 @@ class TuclusterClient:
 
         return model
 
+    def get_models(self):
+        response = requests.get('{}/models'.format(self._host))
+        response.raise_for_status()
+        return response.json()
 
-    def results(self, model=None, script=None, download=False, tree=False):
-        pass
 
+    def get_results(self, model=None, script=None):
+        params = {}
+        if model:
+            params['model'] = model
+        if script:
+            params['entrypoint'] = script
+
+        # Retrieve the ModelRun
+        response = requests.get('{}/runs'.format(self._host), params=params)
+        response.raise_for_status()
+        run = response.json()
+
+        if len(run) == 1:
+            run = run[0]
+            task_id = run.pop('task_id', None)
+            if task_id:
+                response = requests.get('{}/tasks/{}'.format(self._host, task_id))
+                response.raise_for_status()
+                task = response.json()
+                run['task_status'] = task
+
+        return run
 
     def file(self, fid):
         pass
-
